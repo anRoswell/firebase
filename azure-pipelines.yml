@@ -1,0 +1,37 @@
+trigger:
+  branches:
+    include:
+      - dev
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '6.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- script: |
+    pwd
+    ls -la
+  displayName: 'Mostrar directorio de trabajo actual y listar archivos'
+
+- script: |
+    docker build -t 73197546/firebase_prd_sirion:$(Build.BuildId) . -f ./Main/Dockerfile
+  displayName: 'Build Docker image'
+
+- task: Docker@2
+  inputs:
+    command: login
+    containerRegistry: 'DockerConnection'
+    dockerRegistryServiceConnection: 'DockerConnection'
+
+- script: |
+    docker push 73197546/firebase_prd_sirion:$(Build.BuildId)
+  displayName: 'Push Docker image to Docker Hub'
+
+- script: |
+    docker logout
+  displayName: 'Logout from Docker Hub'
